@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AdaptiveFlow • Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body
+    class="theme theme--{{ (selected_energy or 'Medium')|lower }}"
+    data-energy="{{ selected_energy or 'Medium' }}"
+  >
+    <header class="topbar">
+      <div class="topbar__inner">
+        <div class="brand brand--compact">
+          <div class="brand__mark">AF</div>
+          <div class="brand__text">
+            <div class="brand__title">AdaptiveFlow</div>
+            <div class="brand__subtitle">Dashboard</div>
+          </div>
+        </div>
+
+        <div class="topbar__right">
+          <div class="pill">
+            <span class="pill__label">Signed in as</span>
+            <span class="pill__value">{{ username }}</span>
+          </div>
+          <a class="btn btn--ghost" href="{{ url_for('logout') }}">
+            <span>Logout</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      {% if error %}
+      <div class="alert alert--error" role="alert">{{ error }}</div>
+      {% endif %}
+
+      <section class="hero">
+        <div class="hero__left">
+          <h1 class="h1">Today adapts to you.</h1>
+          <p class="muted">
+            Pick your energy, get a scaled goal, and earn consistency points based on capacity—not volume.
+          </p>
+
+          <div class="energy-row">
+            <div class="energy-row__label muted">Energy</div>
+            <div class="segmented" role="group" aria-label="Energy selector">
+              <button
+                class="segmented__btn {% if (selected_energy or 'Medium') == 'High' %}is-active{% endif %}"
+                type="button"
+                data-energy-btn="High"
+              >
+                High
+              </button>
+              <button
+                class="segmented__btn {% if (selected_energy or 'Medium') == 'Medium' %}is-active{% endif %}"
+                type="button"
+                data-energy-btn="Medium"
+              >
+                Medium
+              </button>
+              <button
+                class="segmented__btn {% if (selected_energy or 'Medium') == 'Low' %}is-active{% endif %}"
+                type="button"
+                data-energy-btn="Low"
+              >
+                Low
+              </button>
+              <button
+                class="segmented__btn {% if (selected_energy or 'Medium') == 'Burnout' %}is-active{% endif %}"
+                type="button"
+                data-energy-btn="Burnout"
+              >
+                Burnout
+              </button>
+            </div>
+          </div>
+
+          <div id="encouragement" class="quote" aria-live="polite">
+            You don’t need a perfect day. You need a consistent one.
+          </div>
+        </div>
+
+        <div class="hero__right">
+          <div class="card stat-card">
+            <div class="stat-card__title muted">Latest check-in</div>
+            {% if latest_entry %}
+            <div class="stat-card__main">
+              <div class="stat">
+                <div class="stat__k">{{ latest_entry["title"] }}</div>
+                <div class="stat__v">
+                  {{ latest_entry["completed"] }} / {{ latest_entry["scaled_goal"] }} {{ latest_entry["unit"] }}
+                </div>
+              </div>
+              <div class="stat-grid">
+                <div class="mini">
+                  <div class="mini__k muted">Energy</div>
+                  <div class="mini__v">{{ latest_entry["energy"] }}</div>
+                </div>
+                <div class="mini">
+                  <div class="mini__k muted">Score +</div>
+                  <div class="mini__v">{{ "%.2f"|format(latest_entry["score_delta"]) }}</div>
+                </div>
+                <div class="mini">
+                  <div class="mini__k muted">Date</div>
+                  <div class="mini__v">{{ latest_entry_display_date }}</div>
+                </div>
+              </div>
+            </div>
+            {% else %}
+            <div class="stat-card__empty muted">
+              No entries yet. Add a habit and submit your first check-in.
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <section class="card">
+          <header class="card__header">
+            <h2 class="h2">1) Create a base habit</h2>
+            <p class="muted">Example: “Read” with base goal “20 pages”.</p>
+          </header>
+
+          <form class="form form--grid" method="post" action="{{ url_for('dashboard') }}">
+            <input type="hidden" name="type" value="habit" />
+            <input type="hidden" name="energy" value="{{ selected_energy or 'Medium' }}" />
+
+            <label class="field">
+              <span class="field__label">Habit name</span>
+              <input class="input" name="title" placeholder="Read" required />
+            </label>
+
+            <label class="field">
+              <span class="field__label">Base goal</span>
+              <input class="input" type="number" name="base_goal" min="1" placeholder="20" required />
+            </label>
+
+            <label class="field">
+              <span class="field__label">Unit</span>
+              <input class="input" name="unit" placeholder="pages / cm / minutes" />
+              <span class="field__hint">Optional (example: pages, cm, minutes)</span>
+            </label>
+
+            <button class="btn btn--primary" type="submit">
+              <span>Add habit</span>
+              <span class="btn__glow" aria-hidden="true"></span>
+            </button>
+          </form>
+        </section>
+
+        <section class="card">
+          <header class="card__header">
+            <h2 class="h2">2) Daily check-in</h2>
+            <p class="muted">Energy scales your goal automatically.</p>
+          </header>
+
+          <form class="form form--grid" method="post" action="{{ url_for('dashboard') }}">
+            <input type="hidden" name="type" value="entry" />
+            <input id="energyInput" type="hidden" name="energy" value="{{ selected_energy or 'Medium' }}" />
+
+            <label class="field">
+              <span class="field__label">Habit</span>
+              <select class="input" name="habit_id" required>
+                <option value="" disabled selected>Select a habit</option>
+                {% for h in habits %}
+                <option value="{{ h['id'] }}" data-base-goal="{{ h['base_goal'] }}" data-unit="{{ h['unit'] }}">
+                  {{ h["title"] }} ({{ h["base_goal"] }} {{ h["unit"] }})
+                </option>
+                {% endfor %}
+              </select>
+            </label>
+
+            <label class="field">
+              <span class="field__label">Completed today</span>
+              <input class="input" type="number" name="completed" min="0" placeholder="0" required />
+            </label>
+
+            <div class="field field--wide">
+              <div class="calc">
+                <div class="calc__row">
+                  <div class="calc__k muted">Multiplier</div>
+                  <div id="multiplierText" class="calc__v">0.6×</div>
+                </div>
+                <div class="calc__row">
+                  <div class="calc__k muted">Scaled goal (preview)</div>
+                  <div id="scaledPreview" class="calc__v">Select a habit</div>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn btn--primary" type="submit">
+              <span>Submit check-in</span>
+              <span class="btn__glow" aria-hidden="true"></span>
+            </button>
+          </form>
+        </section>
+      </section>
+
+      <section class="card chart-card">
+        <header class="card__header">
+          <h2 class="h2">7-day trend</h2>
+          <p class="muted">Consistency score over the last week.</p>
+        </header>
+
+        <div class="chart-wrap">
+          <canvas id="trendChart" height="120"></canvas>
+        </div>
+      </section>
+
+      <section class="card chart-card">
+        <header class="card__header">
+          <h2 class="h2">Monthly energy mix</h2>
+          <p class="muted">Last 30 days of score broken down by energy.</p>
+        </header>
+
+        <div class="chart-wrap" style="height:220px;">
+          <canvas id="monthlyChart" height="220"></canvas>
+        </div>
+      </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>

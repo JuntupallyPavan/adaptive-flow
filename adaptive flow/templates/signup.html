@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AdaptiveFlow • Signup</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body class="theme theme--medium">
+    <main class="shell">
+      <section class="card auth-card">
+        <header class="card__header">
+          <div class="brand">
+            <div class="brand__mark">AF</div>
+            <div class="brand__text">
+              <div class="brand__title">AdaptiveFlow</div>
+              <div class="brand__subtitle">Energy Aware Habit Engine</div>
+            </div>
+          </div>
+        </header>
+
+        <h1 class="h1">Create your account</h1>
+        <p class="muted">No email. No drama. Just energy-aware progress.</p>
+
+        {% if error %}
+        <div class="alert alert--error" role="alert">{{ error }}</div>
+        {% endif %}
+
+        <form class="form" method="post" action="{{ url_for('signup') }}">
+          <label class="field">
+            <span class="field__label">Username</span>
+            <input class="input" name="username" autocomplete="username" minlength="3" required />
+            <span class="field__hint">At least 3 characters</span>
+          </label>
+
+          <label class="field">
+            <span class="field__label">Password</span>
+            <input class="input" type="password" name="password" autocomplete="new-password" minlength="6" required />
+            <span class="field__hint">At least 6 characters</span>
+          </label>
+
+          <button class="btn btn--primary btn--lg" type="submit">
+            <span>Sign up</span>
+            <span class="btn__glow" aria-hidden="true"></span>
+          </button>
+        </form>
+
+        <footer class="card__footer">
+          <span class="muted">Already have an account?</span>
+          <a class="link" href="{{ url_for('login') }}">Log in</a>
+        </footer>
+      </section>
+    </main>
+  </body>
+</html>

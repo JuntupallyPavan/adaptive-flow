@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AdaptiveFlow • Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body class="theme theme--medium">
+    <main class="shell">
+      <section class="card auth-card">
+        <header class="card__header">
+          <div class="brand">
+            <div class="brand__mark">AF</div>
+            <div class="brand__text">
+              <div class="brand__title">AdaptiveFlow</div>
+              <div class="brand__subtitle">Energy Aware Habit Engine</div>
+            </div>
+          </div>
+        </header>
+
+        <h1 class="h1">Welcome back</h1>
+        <p class="muted">Log in to continue your streak relative to your energy.</p>
+
+        {% if error %}
+        <div class="alert alert--error" role="alert">{{ error }}</div>
+        {% endif %}
+
+        <form class="form" method="post" action="{{ url_for('login') }}">
+          <label class="field">
+            <span class="field__label">Username</span>
+            <input class="input" name="username" autocomplete="username" required />
+          </label>
+
+          <label class="field">
+            <span class="field__label">Password</span>
+            <input class="input" type="password" name="password" autocomplete="current-password" required />
+          </label>
+
+          <button class="btn btn--primary btn--lg" type="submit">
+            <span>Login</span>
+            <span class="btn__glow" aria-hidden="true"></span>
+          </button>
+        </form>
+
+        <footer class="card__footer">
+          <span class="muted">New here?</span>
+          <a class="link" href="{{ url_for('signup') }}">Create an account</a>
+        </footer>
+      </section>
+    </main>
+  </body>
+</html>
